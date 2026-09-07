@@ -11,8 +11,6 @@ Type=simple
 # the file is optional — the service starts even if it's missing, but
 # `iphonebridge doctor` will then warn that the MAC isn't configured.
 EnvironmentFile=-%h/.config/iphonebridge/local.env
-# The install steps create this symlink, so the repository can be cloned
-# anywhere under (or outside) the user's home directory.
 ExecStart=%h/.local/bin/iphonebridge run
 Restart=on-failure
 RestartSec=5

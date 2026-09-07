@@ -89,8 +89,8 @@ ln -sf "$(pwd)/.venv/bin/iphonebridge-ui" ~/.local/bin/iphonebridge-ui
 ### 3 · Prepare and start the daemon
 
 ```bash
-# Let the user service set the Bluetooth adapter class required by iOS.
-sudo bash systemd/install-cod-sudoers.sh
+# Present the Bluetooth adapter as an A/V Hands-Free device for pairing.
+sudo btmgmt class 4 8
 
 mkdir -p ~/.config/systemd/user
 cp systemd/iphonebridge.service ~/.config/systemd/user/
@@ -157,6 +157,17 @@ iphonebridge hfp-enable
 steps — restart oFono **after** WirePlumber so it can claim the HFP profile,
 reconnect the iPhone, restart the daemon — and incoming calls will pop up
 with **Answer / Decline** buttons. Place calls with `iphonebridge call`.
+
+</details>
+
+<details>
+<summary><b>(Optional) Persist the Bluetooth class across reboots</b></summary>
+
+```bash
+sudo bash systemd/install-cod-sudoers.sh
+```
+
+Lets the daemon set the adapter's Class-of-Device on every start without a password prompt. Without it you'd occasionally need to re-run setup after a reboot.
 
 </details>
 

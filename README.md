@@ -51,7 +51,7 @@ As far as we know, **iphonebridge is the first free, open-source, Mac-free iMess
 | **Bluetooth adapter** | Intel chipset (for ANCS) | Intel AX-series |
 | **Python** | 3.10+ | 3.12 |
 | **iPhone** | iOS 16.5+ | iPhone 16 Pro Max, iOS 26.5 |
-| **System packages** | `bluez`, `bluez-obexd`, `python3-dbus`, `python3-gi` (+ `ofono` for calls, `wl-clipboard` for code auto-copy) | — |
+| **System packages** | `bluez`, `bluez-obexd`, `ofono`, `python3-dbus`, `python3-gi` (+ `wl-clipboard` for code auto-copy) | — |
 
 > ⚠️ **Adapter chipset matters for ANCS.** Per-app notifications need a real BLE bond with the iPhone. Intel adapters do this reliably. **Realtek adapters and every USB Bluetooth dongle tested so far do *not*** — their firmware negotiates legacy keys that block the cross-transport key derivation iOS needs. SMS/iMessage/contacts (MAP/PBAP) work on any adapter; only ANCS is picky. See [bmh129/ancs4linux's hardware notes](https://github.com/bmh129/ancs4linux).
 
@@ -60,7 +60,8 @@ As far as we know, **iphonebridge is the first free, open-source, Mac-free iMess
 ### 1 · System packages
 
 ```bash
-sudo apt install bluez bluez-obexd python3-dbus python3-gi python3-venv
+sudo apt install bluez bluez-obexd ofono python3-dbus python3-gi python3-venv
+sudo systemctl enable --now ofono
 # For the desktop app (iphonebridge-ui):
 sudo apt install gir1.2-gtk-4.0 gir1.2-adw-1
 # For auto-copying verification codes (Wayland):
@@ -85,7 +86,23 @@ ln -sf "$(pwd)/.venv/bin/iphonebridge" ~/.local/bin/iphonebridge
 ln -sf "$(pwd)/.venv/bin/iphonebridge-ui" ~/.local/bin/iphonebridge-ui
 ```
 
-### 3 · Pair your iPhone
+### 3 · Prepare and start the daemon
+
+```bash
+# Let the user service set the Bluetooth adapter class required by iOS.
+sudo bash systemd/install-cod-sudoers.sh
+
+mkdir -p ~/.config/systemd/user
+cp systemd/iphonebridge.service ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable --now iphonebridge
+```
+
+The daemon must be running before pairing so the adapter presents the
+A/V Hands-Free class and advertises the services that make the iPhone's
+message and contact toggles appear.
+
+### 4 · Pair your iPhone
 
 Pair normally — GNOME **Settings → Bluetooth**, or `bluetoothctl`. Then run the wizard:
 
@@ -93,16 +110,9 @@ Pair normally — GNOME **Settings → Bluetooth**, or `bluetoothctl`. Then run 
 iphonebridge pair-setup
 ```
 
-It finds your iPhone among paired devices, writes `~/.config/iphonebridge/local.env`, and prints the iPhone-side steps.
-
-### 4 · Install the daemon as a service
-
-```bash
-mkdir -p ~/.config/systemd/user
-cp systemd/iphonebridge.service ~/.config/systemd/user/
-systemctl --user daemon-reload
-systemctl --user enable --now iphonebridge
-```
+It finds your iPhone among paired devices, writes
+`~/.config/iphonebridge/local.env`, and offers to restart the daemon with the
+new device configuration.
 
 ### 5 · iPhone-side toggles
 
@@ -138,11 +148,7 @@ To take and place calls on the laptop, iphonebridge uses **oFono** for HFP
 call control and PipeWire's oFono backend for the call audio.
 
 ```bash
-# Install oFono
-sudo apt install ofono
-sudo systemctl enable --now ofono
-
-# Write the WirePlumber config + print the remaining steps
+# Write the WirePlumber config and print the remaining steps.
 iphonebridge hfp-enable
 ```
 
@@ -151,17 +157,6 @@ iphonebridge hfp-enable
 steps — restart oFono **after** WirePlumber so it can claim the HFP profile,
 reconnect the iPhone, restart the daemon — and incoming calls will pop up
 with **Answer / Decline** buttons. Place calls with `iphonebridge call`.
-
-</details>
-
-<details>
-<summary><b>(Optional) Persist the Bluetooth class across reboots</b></summary>
-
-```bash
-sudo bash systemd/install-cod-sudoers.sh
-```
-
-Lets the daemon set the adapter's Class-of-Device on every start without a password prompt. Without it you'd occasionally need to re-run setup after a reboot.
 
 </details>
 

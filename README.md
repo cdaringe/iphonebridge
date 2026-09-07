@@ -61,7 +61,6 @@ As far as we know, **iphonebridge is the first free, open-source, Mac-free iMess
 
 ```bash
 sudo apt install bluez bluez-obexd ofono python3-dbus python3-gi python3-venv
-sudo systemctl enable --now ofono
 # For the desktop app (iphonebridge-ui):
 sudo apt install gir1.2-gtk-4.0 gir1.2-adw-1
 # For auto-copying verification codes (Wayland):
@@ -89,9 +88,6 @@ ln -sf "$(pwd)/.venv/bin/iphonebridge-ui" ~/.local/bin/iphonebridge-ui
 ### 3 · Prepare and start the daemon
 
 ```bash
-# Present the Bluetooth adapter as an A/V Hands-Free device for pairing.
-sudo btmgmt class 4 8
-
 mkdir -p ~/.config/systemd/user
 cp systemd/iphonebridge.service ~/.config/systemd/user/
 systemctl --user daemon-reload
@@ -148,7 +144,10 @@ To take and place calls on the laptop, iphonebridge uses **oFono** for HFP
 call control and PipeWire's oFono backend for the call audio.
 
 ```bash
-# Write the WirePlumber config and print the remaining steps.
+# Enable the oFono service installed with the system packages above.
+sudo systemctl enable --now ofono
+
+# Write the WirePlumber config + print the remaining steps
 iphonebridge hfp-enable
 ```
 
